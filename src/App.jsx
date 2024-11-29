@@ -1,12 +1,37 @@
 import { useEffect, useState } from "react";
 
-async function fetchVerse(name) {
-  const url = `${name}.txt`;
-  const response = await fetch(url);
-  return response.text();
+async function fetchProducts() {
+  const response = await fetch("/products.json");
+  return response.json();
 }
 
 export default function App() {
+  const [allProducts, setAllProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const productsData = await fetchProducts();
+      setAllProducts(productsData);
+      setFilteredProducts(productsData); 
+    })();
+  },[]);
+
+  const handleResultClick = () => {
+    let results = allProducts;
+
+    if (selectedCategory !== "all") {
+      results = results.filter((product) => product.type === selectedCategory);
+    }
+    if (searchTerm) {
+      results = results.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+
+    setFilteredProducts(results);
+  }
+  
     return (
       <>
         <header>
@@ -17,23 +42,38 @@ export default function App() {
             <form>
               <div>
                 <label htmlFor="category">Choose a category:</label>
-                <select id="category">
-                  <option>All</option>
-                  <option>Vegetables</option>
-                  <option>Meat</option>
-                  <option>Soup</option>
+                <select id="category" value={selectedCategory} onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  }}>
+                  <option value="all">All</option>
+                  <option value="vegetables">Vegetables</option>
+                  <option value="meat">Meat</option>
+                  <option value="soup">Soup</option>
                 </select>
               </div>
               <div>
                 <label htmlFor="searchTerm">Enter search term:</label>
-                <input type="text" id="searchTerm" placeholder="e.g. beans" />
+                <input type="text" id="searchTerm" placeholder="e.g. beans" value={searchTerm}
+                onChange={(e) => {setSearchTerm(e.target.value);}}/>
               </div>
+
               <div>
-                <button>Filter results</button>
+                <button type="button" onClick={handleResultClick}>Filter results</button>
               </div>
             </form>
           </aside>
-          <main></main>
+          <main>
+            {filteredProducts.map((product) => {
+              const productName = product.name.substring(0, 1).toUpperCase() + product.name.substring(1);
+              return(
+                <section key={product.name} className={product.type}>
+                  <h2>{productName}</h2>
+                  <p>${product.price}</p>
+                  <img src={`images/${product.image}`} alt={product.name} />
+                </section>
+              );
+            })}
+          </main>
         </div>
         <footer>
           <p>All icons found at the Noun Project:</p>
